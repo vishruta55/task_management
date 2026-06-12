@@ -42,9 +42,9 @@ if ENV_PATH.exists():
 SECRET_KEY = 'django-insecure-#_(bt!!jec5wvng5m(q5nyu4&y&8(jfs0gh73agjt9=^+q8xk@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['.onrender.com']
+ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
