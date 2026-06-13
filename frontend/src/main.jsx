@@ -9,6 +9,12 @@ const roles = [
   { value: 'member', label: 'Team Member' },
 ];
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+
+function apiUrl(path) {
+  return `${API_BASE_URL}/api${path}`;
+}
+
 function App() {
   const [csrfToken, setCsrfToken] = useState('');
   const [user, setUser] = useState(null);
@@ -20,7 +26,7 @@ function App() {
   const [sessionReady, setSessionReady] = useState(false);
 
   async function api(path, options = {}) {
-    const response = await fetch(`/api${path}`, {
+    const response = await fetch(apiUrl(path), {
       credentials: 'include',
       ...options,
       headers: {
@@ -46,8 +52,13 @@ function App() {
   }
 
   useEffect(() => {
-    fetch('/api/session/', { credentials: 'include' })
-      .then((response) => response.json())
+    fetch(apiUrl('/session/'), { credentials: 'include' })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Backend returned ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then((body) => {
         setCsrfToken(body.csrfToken);
         setUser(body.user);
@@ -56,8 +67,9 @@ function App() {
           loadBootstrap();
         }
       })
-      .catch(() => {
-        setNotice('Could not connect to the backend. Make sure Django is running on port 8000.');
+      .catch((error) => {
+        console.error('Backend connection failed:', error);
+        setNotice(`Could not connect to the backend: ${error.message}`);
         setSessionReady(true);
       });
   }, []);
