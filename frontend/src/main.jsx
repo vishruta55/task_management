@@ -110,7 +110,11 @@ function App() {
     setBusy(true);
     try {
       const result = await action();
-      await loadBootstrap();
+      try {
+        await loadBootstrap();
+      } catch (error) {
+        throw new Error(`Action completed, but refresh failed: ${error.message}`);
+      }
       setNotice(typeof success === 'function' ? success(result) : success);
     } catch (error) {
       setNotice(error.message);

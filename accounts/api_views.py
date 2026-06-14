@@ -1,4 +1,5 @@
 import json
+import logging
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login, logout
@@ -18,6 +19,9 @@ from projects.models import Project
 from tasks.forms import MeetLinkForm
 from tasks.models import ProgressUpdate, Task
 from tasks.views import update_project_status
+
+
+logger = logging.getLogger(__name__)
 
 
 def payload(request):
@@ -305,6 +309,7 @@ def users_view(request):
     except IntegrityError:
         return json_error('Username or phone number is already used.', status=422)
     except Exception as error:
+        logger.exception('User creation failed while saving user.')
         return json_error(f'User could not be saved: {error}', status=500)
     email_sent, email_error = send_password_email(
         user,
