@@ -300,7 +300,12 @@ def users_view(request):
         return json_error('User could not be created.', errors=form.errors, status=422)
 
     raw_password = form.cleaned_data['password1']
-    user = form.save()
+    try:
+        user = form.save()
+    except IntegrityError:
+        return json_error('Username or phone number is already used.', status=422)
+    except Exception as error:
+        return json_error(f'User could not be saved: {error}', status=500)
     email_sent, email_error = send_password_email(
         user,
         raw_password,
