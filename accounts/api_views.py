@@ -146,6 +146,14 @@ def json_error(message, status=400, errors=None):
     return JsonResponse(body, status=status)
 
 
+def normalize_user_data(data):
+    cleaned = data.copy()
+    for field in ['phone_number', 'dob', 'age', 'salary', 'address']:
+        if cleaned.get(field) == '':
+            cleaned[field] = None
+    return cleaned
+
+
 def send_password_email(user, raw_password, subject):
     if not user.email:
         return False, 'User has no email address.'
@@ -282,7 +290,7 @@ def users_view(request):
     if not admin_required(request.user):
         return json_error('Admin access is required.', status=403)
 
-    data = payload(request).copy()
+    data = normalize_user_data(payload(request))
     if 'password' in data and 'password1' not in data:
         data['password1'] = data['password']
         data['password2'] = data['password']
@@ -319,12 +327,10 @@ def user_detail_view(request, user_id):
         user.delete()
         return JsonResponse({'ok': True})
 
-    data = payload(request)
+    data = normalize_user_data(payload(request))
     for field in ['username', 'email', 'role', 'phone_number', 'dob', 'age', 'salary', 'address']:
         if field in data:
             value = data.get(field)
-            if field in ['dob', 'age', 'salary'] and value == '':
-                value = None
             setattr(user, field, value)
 
     raw_password = data.get('password')
