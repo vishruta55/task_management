@@ -40,7 +40,13 @@ function App() {
       ? await response.json().catch(() => ({}))
       : {};
     if (!response.ok) {
-      throw new Error(body.error || `Request failed (${response.status}).`);
+      const fieldErrors = body.errors
+        ? Object.entries(body.errors).flatMap(([field, errors]) => {
+            const messages = Array.isArray(errors) ? errors : [errors];
+            return messages.map((message) => `${field}: ${message}`);
+          })
+        : [];
+      throw new Error([body.error, ...fieldErrors].filter(Boolean).join(' ') || `Request failed (${response.status}).`);
     }
     return body;
   }
