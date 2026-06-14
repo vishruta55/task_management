@@ -185,6 +185,7 @@ def send_password_email(user, raw_password, subject):
 @require_http_methods(['GET'])
 def session_view(request):
     return JsonResponse({
+        'appVersion': 'user-create-diagnostics-2026-06-17',
         'csrfToken': get_token(request),
         'user': current_user_payload(request),
     })
