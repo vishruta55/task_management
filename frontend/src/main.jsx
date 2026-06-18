@@ -381,7 +381,7 @@ function AssignedProjectsView({ data, busy, api, mutate }) {
               <td><span className="badge">{project.statusLabel}</span></td>
               <td>
                 <select value={project.status} disabled={busy} onChange={(event) => mutate(
-                  () => api(`/projects/${project.id}/status/`, { method: 'PATCH', body: JSON.stringify({ status: event.target.value }) }),
+                  () => api(`/projects/${project.id}/status/`, { method: 'POST', body: JSON.stringify({ status: event.target.value }) }),
                   'Project status updated.',
                 )}>
                   {data.options.projectStatuses.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
@@ -539,7 +539,7 @@ function UsersTable({ data, busy, api, mutate }) {
                     <div className="actions">
                       <button className="primaryButton" disabled={busy} onClick={() => {
                         mutate(
-                          () => api(`/users/${item.id}/`, { method: 'PATCH', body: JSON.stringify(values) }),
+                          () => api(`/users/${item.id}/`, { method: 'POST', body: JSON.stringify(values) }),
                           (result) => {
                             if (!values.password) return 'User updated.';
                             if (result.passwordEmailSent) return 'User updated and new password emailed.';
@@ -625,7 +625,7 @@ function CreateGroupForm({ data, busy, mutate, api, editingGroup, clearEditing }
       <form className="formGrid" onSubmit={(event) => {
         event.preventDefault();
         if (editingGroup) {
-          mutate(() => api(`/groups/${editingGroup.id}/`, { method: 'PATCH', body: JSON.stringify(values) }), 'Group updated.');
+          mutate(() => api(`/groups/${editingGroup.id}/`, { method: 'POST', body: JSON.stringify(values) }), 'Group updated.');
           setValues({ name: '', manager: '', teamLeaders: [], memberAssignments: [] });
           clearEditing();
           return;
@@ -760,7 +760,7 @@ function ProjectsView({ data, busy, api, mutate, user }) {
                 <td>{project.deadline}</td>
                 <td>
                   <select value={project.status} onChange={(event) => mutate(
-                    () => api(`/projects/${project.id}/status/`, { method: 'PATCH', body: JSON.stringify({ status: event.target.value }) }),
+                    () => api(`/projects/${project.id}/status/`, { method: 'POST', body: JSON.stringify({ status: event.target.value }) }),
                     'Project status updated.',
                   )}>
                     {data.options.projectStatuses.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}

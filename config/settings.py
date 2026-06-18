@@ -15,14 +15,26 @@ from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-DEFAULT_DB_PATH = BASE_DIR / 'db.sqlite3'
-DATABASE_PATH = Path(os.environ.get('SQLITE_DB_PATH', DEFAULT_DB_PATH))
-DATABASES = {
-    'default': dj_database_url.parse(
-        os.environ.get('DATABASE_URL')
-    )
-}
-ENV_PATH = BASE_DIR / '.env'
+ENV_PATH = BASE_DIR / ".env"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(DATABASE_URL)
+    }
+else:
+    sqlite_path = os.environ.get("SQLITE_DB_PATH")
+    if sqlite_path:
+        db_path = Path(sqlite_path)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        db_path = BASE_DIR / "db.sqlite3"
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": db_path,
+        }
+    }
 
 if ENV_PATH.exists():
     for line in ENV_PATH.read_text().splitlines():
@@ -136,15 +148,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': DATABASE_PATH,
-    }
-}
 
 
 # Password validation

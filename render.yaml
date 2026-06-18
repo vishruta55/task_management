@@ -32,6 +32,8 @@ services:
         sync: false
       - key: SQLITE_DB_PATH
         value: /var/data/db.sqlite3
+      - key: DATABASE_URL
+        sync: false
     disk:
       name: task-management-data
       mountPath: /var/data
