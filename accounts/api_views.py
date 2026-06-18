@@ -184,6 +184,19 @@ def send_password_email(user, raw_password, subject):
 
 @require_http_methods(['GET'])
 def session_view(request):
+    # Auto-seed admin user on first startup (ensures login works on Render deploy)
+    User = get_user_model()
+    if not User.objects.filter(is_superuser=True).exists():
+        if not User.objects.exists():
+            try:
+                User.objects.create_superuser(
+                    username='admin',
+                    password='admin123',
+                    email='admin@example.com',
+                )
+            except Exception:
+                pass
+
     return JsonResponse({
         'appVersion': 'user-create-diagnostics-2026-06-17',
         'csrfToken': get_token(request),

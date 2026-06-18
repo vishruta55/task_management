@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.db import connection
 
 
 class Command(BaseCommand):
@@ -24,6 +25,19 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         User = get_user_model()
+
+        # Check if the User table exists (works on both SQLite and PostgreSQL)
+        table_name = User._meta.db_table
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
+        except Exception:
+            self.stdout.write(
+                self.style.WARNING(
+                    'Database tables do not exist yet. Run migrations first. Skipping seed.'
+                )
+            )
+            return
 
         if User.objects.exists():
             self.stdout.write(
