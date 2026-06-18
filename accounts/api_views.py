@@ -320,17 +320,17 @@ def users_view(request):
 
         raw_password = form.cleaned_data['password1']
         user = form.save()
+
+        email_sent, email_error = send_password_email(
+            user,
+            raw_password,
+            'Your task management account has been created',
+        )
     except IntegrityError:
         return json_error('Username or phone number is already used.', status=422)
     except Exception as error:
         logger.exception('User creation failed.')
         return json_error(f'User creation crashed: {type(error).__name__}: {error}', status=500)
-
-    email_sent, email_error = send_password_email(
-        user,
-        raw_password,
-        'Your task management account has been created',
-    )
 
     return JsonResponse({
         'user': user_json(user),
@@ -364,17 +364,19 @@ def user_detail_view(request, user_id):
 
     try:
         user.save()
+
+        email_sent = None
+        email_error = ''
+        if raw_password:
+            email_sent, email_error = send_password_email(
+                user,
+                raw_password,
+                'Your task management password has been updated',
+            )
     except IntegrityError:
         return json_error('Username or phone number is already used.', status=422)
-
-    email_sent = None
-    email_error = ''
-    if raw_password:
-        email_sent, email_error = send_password_email(
-            user,
-            raw_password,
-            'Your task management password has been updated',
-        )
+    except Exception as error:
+        return json_error(f'Failed to update user: {type(error).__name__}: {error}', status=500)
 
     return JsonResponse({
         'user': user_json(user),
