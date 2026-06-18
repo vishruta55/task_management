@@ -295,23 +295,24 @@ def users_view(request):
     if not admin_required(request.user):
         return json_error('Admin access is required.', status=403)
 
-    data = normalize_user_data(payload(request))
-    if 'password' in data and 'password1' not in data:
-        data['password1'] = data['password']
-        data['password2'] = data['password']
-
-    form = WebAdminUserCreationForm(data)
-    if not form.is_valid():
-        return json_error('User could not be created.', errors=form.errors, status=422)
-
-    raw_password = form.cleaned_data['password1']
     try:
+        data = normalize_user_data(payload(request))
+        if 'password' in data and 'password1' not in data:
+            data['password1'] = data['password']
+            data['password2'] = data['password']
+
+        form = WebAdminUserCreationForm(data)
+        if not form.is_valid():
+            return json_error('User could not be created.', errors=form.errors, status=422)
+
+        raw_password = form.cleaned_data['password1']
         user = form.save()
     except IntegrityError:
         return json_error('Username or phone number is already used.', status=422)
     except Exception as error:
-        logger.exception('User creation failed while saving user.')
-        return json_error(f'User could not be saved: {error}', status=500)
+        logger.exception('User creation failed.')
+        return json_error(f'User creation crashed: {type(error).__name__}: {error}', status=500)
+
     email_sent, email_error = send_password_email(
         user,
         raw_password,

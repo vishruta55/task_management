@@ -9,15 +9,19 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-
 import os
+import dj_database_url
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_DB_PATH = BASE_DIR / 'db.sqlite3'
 DATABASE_PATH = Path(os.environ.get('SQLITE_DB_PATH', DEFAULT_DB_PATH))
-
+DATABASES = {
+    'default': dj_database_url.parse(
+        os.environ.get('DATABASE_URL')
+    )
+}
 ENV_PATH = BASE_DIR / '.env'
 
 if ENV_PATH.exists():
@@ -203,7 +207,7 @@ EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '').replace(' ', '')
-EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', 20))
+EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', 5))
 DEFAULT_FROM_EMAIL = os.environ.get(
     'DEFAULT_FROM_EMAIL',
     EMAIL_HOST_USER or 'Task Management <noreply@example.com>'
