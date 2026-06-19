@@ -1019,7 +1019,13 @@ function TaskTable({ tasks, api, mutate, compact = false, showActions = false })
                 {task.status === 'submitted' && (
                   <div className="actions">
                     <input placeholder="https://meet.google.com/..." value={meetLinks[task.id] || task.googleMeetLink || ''} onChange={(event) => setMeetLinks({ ...meetLinks, [task.id]: event.target.value })} />
-                    <button onClick={() => mutate(() => api(`/tasks/${task.id}/meet/`, { method: 'POST', body: JSON.stringify({ google_meet_link: meetLinks[task.id] || task.googleMeetLink }) }), 'Meet link saved.')}>Send Meet</button>
+                    <button onClick={() => mutate(
+                      () => api(`/tasks/${task.id}/meet/`, { method: 'POST', body: JSON.stringify({ google_meet_link: meetLinks[task.id] || task.googleMeetLink }) }),
+                      (result) => {
+                        if (result.meetEmailSent) return 'Meet link saved and emailed.';
+                        return `Meet link saved, but email was not sent: ${result.meetEmailError}`;
+                      },
+                    )}>Send Meet</button>
                     <button className="primaryButton" onClick={() => mutate(() => api(`/tasks/${task.id}/approve/`, { method: 'POST' }), 'Task approved.')}>Approve</button>
                   </div>
                 )}

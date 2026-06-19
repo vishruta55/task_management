@@ -247,22 +247,28 @@ def share_meet_link(request, task_id):
             ])
 
             if task.assigned_member.email:
-                send_mail(
-                    subject=f'Presentation meeting for {task.task_name}',
-                    message=(
-                        f'Hello {task.assigned_member.username},\n\n'
-                        f'Your team leader has shared a Google Meet link '
-                        f'for presenting your completed work.\n\n'
-                        f'Task: {task.task_name}\n'
-                        f'Project: {task.project}\n'
-                        f'Meet link: {task.google_meet_link}\n\n'
-                        'Please join this meeting and present your work.'
-                    ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[task.assigned_member.email],
-                    fail_silently=False,
-                )
-                messages.success(request, 'Google Meet link sent to the member.')
+                try:
+                    send_mail(
+                        subject=f'Presentation meeting for {task.task_name}',
+                        message=(
+                            f'Hello {task.assigned_member.username},\n\n'
+                            f'Your team leader has shared a Google Meet link '
+                            f'for presenting your completed work.\n\n'
+                            f'Task: {task.task_name}\n'
+                            f'Project: {task.project}\n'
+                            f'Meet link: {task.google_meet_link}\n\n'
+                            'Please join this meeting and present your work.'
+                        ),
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[task.assigned_member.email],
+                        fail_silently=False,
+                    )
+                    messages.success(request, 'Google Meet link sent to the member.')
+                except Exception as error:
+                    messages.error(
+                        request,
+                        f'Meet link saved, but email was not sent: {error}'
+                    )
             else:
                 messages.warning(
                     request,

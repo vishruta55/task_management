@@ -1,5 +1,6 @@
 import json
 import logging
+import socket
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login, logout
@@ -164,6 +165,10 @@ def send_password_email(user, raw_password, subject):
     if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
         return False, 'Email settings are not configured.'
 
+    # Set a socket timeout so the email send doesn't hang indefinitely
+    default_timeout = socket.getdefaulttimeout()
+    socket.setdefaulttimeout(settings.EMAIL_TIMEOUT or 10)
+
     try:
         send_mail(
             subject=subject,
@@ -178,6 +183,8 @@ def send_password_email(user, raw_password, subject):
         )
     except Exception as error:
         return False, str(error)
+    finally:
+        socket.setdefaulttimeout(default_timeout)
 
     return True, ''
 
@@ -630,7 +637,39 @@ def task_meet_view(request, task_id):
     task = form.save(commit=False)
     task.presentation_requested_at = timezone.now()
     task.save(update_fields=['google_meet_link', 'presentation_requested_at'])
-    return JsonResponse({'task': task_json(task)})
+
+    email_sent = False
+    email_error = ''
+    if not task.assigned_member.email:
+        email_error = 'Assigned member has no email address.'
+    elif not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+        email_error = 'Email settings are not configured.'
+    else:
+        try:
+            send_mail(
+                subject=f'Presentation meeting for {task.task_name}',
+                message=(
+                    f'Hello {task.assigned_member.username},\n\n'
+                    'Your team leader has shared a Google Meet link '
+                    'for presenting your completed work.\n\n'
+                    f'Task: {task.task_name}\n'
+                    f'Project: {task.project}\n'
+                    f'Meet link: {task.google_meet_link}\n\n'
+                    'Please join this meeting and present your work.'
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[task.assigned_member.email],
+                fail_silently=False,
+            )
+            email_sent = True
+        except Exception as error:
+            email_error = str(error)
+
+    return JsonResponse({
+        'task': task_json(task),
+        'meetEmailSent': email_sent,
+        'meetEmailError': email_error,
+    })
 
 
 @login_required
