@@ -151,6 +151,13 @@ def json_error(message, status=400, errors=None):
     return JsonResponse(body, status=status)
 
 
+def form_errors_json(form):
+    return {
+        field: [str(error) for error in errors]
+        for field, errors in form.errors.items()
+    }
+
+
 def normalize_user_data(data):
     cleaned = data.copy()
     for field in ['phone_number', 'dob', 'age', 'salary', 'address']:
@@ -323,7 +330,11 @@ def users_view(request):
 
         form = WebAdminUserCreationForm(data)
         if not form.is_valid():
-            return json_error('User could not be created.', errors=form.errors, status=422)
+            return json_error(
+                'User could not be created.',
+                errors=form_errors_json(form),
+                status=422,
+            )
 
         raw_password = form.cleaned_data['password1']
         user = form.save()

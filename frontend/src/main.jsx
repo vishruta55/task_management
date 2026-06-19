@@ -39,6 +39,9 @@ function App() {
     const body = contentType.includes('application/json')
       ? await response.json().catch(() => ({}))
       : {};
+    const fallbackError = !contentType.includes('application/json')
+      ? await response.text().then((text) => text.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300)).catch(() => '')
+      : '';
     if (!response.ok) {
       const fieldErrors = body.errors
         ? Object.entries(body.errors).flatMap(([field, errors]) => {
@@ -46,7 +49,7 @@ function App() {
             return messages.map((message) => `${field}: ${message}`);
           })
         : [];
-      throw new Error([body.error, ...fieldErrors].filter(Boolean).join(' ') || `Request failed (${response.status}).`);
+      throw new Error([body.error, ...fieldErrors].filter(Boolean).join(' ') || fallbackError || `Request failed (${response.status}).`);
     }
     return body;
   }
