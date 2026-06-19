@@ -59,6 +59,16 @@ def env_bool(name, default=False):
     return value.lower() in ('1', 'true', 'yes', 'on')
 
 
+def env_int(name, default):
+    value = os.environ.get(name)
+    if value in (None, ''):
+        return default
+    try:
+        return int(value.strip().strip('"').strip("'"))
+    except (TypeError, ValueError):
+        return default
+
+
 def env_list(name, default=''):
     value = os.environ.get(name, default)
     return [item.strip() for item in value.split(',') if item.strip()]
@@ -206,11 +216,11 @@ EMAIL_BACKEND = os.environ.get(
     'django.core.mail.backends.smtp.EmailBackend'
 )
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_PORT = env_int('EMAIL_PORT', 587)
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '').replace(' ', '')
-EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', 5))
+EMAIL_TIMEOUT = env_int('EMAIL_TIMEOUT', 5)
 DEFAULT_FROM_EMAIL = os.environ.get(
     'DEFAULT_FROM_EMAIL',
     EMAIL_HOST_USER or 'Task Management <noreply@example.com>'
