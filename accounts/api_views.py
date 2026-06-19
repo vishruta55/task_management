@@ -163,6 +163,10 @@ def normalize_user_data(data):
     for field in ['phone_number', 'dob', 'age', 'salary', 'address']:
         if cleaned.get(field) == '':
             cleaned[field] = None
+    dob = cleaned.get('dob')
+    if isinstance(dob, str) and len(dob) == 10 and dob[2] == '-' and dob[5] == '-':
+        day, month, year = dob.split('-')
+        cleaned['dob'] = f'{year}-{month}-{day}'
     return cleaned
 
 
@@ -212,7 +216,7 @@ def session_view(request):
                 pass
 
     return JsonResponse({
-        'appVersion': 'user-create-diagnostics-2026-06-17',
+        'appVersion': 'user-create-diagnostics-2026-06-19',
         'csrfToken': get_token(request),
         'user': current_user_payload(request),
     })
