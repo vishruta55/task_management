@@ -10,17 +10,58 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 import os
-import dj_database_url
+from urllib.parse import urlparse, unquote
 from pathlib import Path
+
+try:
+    import dj_database_url
+except ImportError:
+    dj_database_url = None
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 ENV_PATH = BASE_DIR / ".env"
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
+
+def parse_database_url_fallback(database_url):
+    parsed = urlparse(database_url)
+    scheme = parsed.scheme.lower()
+
+    if scheme in ('sqlite', 'sqlite3'):
+        db_name = parsed.path or ':memory:'
+        if db_name.startswith('/'):
+            db_name = db_name[1:]
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': unquote(db_name) or ':memory:',
+        }
+
+    engine_map = {
+        'postgres': 'django.db.backends.postgresql',
+        'postgresql': 'django.db.backends.postgresql',
+        'postgresql_psycopg2': 'django.db.backends.postgresql',
+        'mysql': 'django.db.backends.mysql',
+        'mysql2': 'django.db.backends.mysql',
+    }
+    engine = engine_map.get(scheme, 'django.db.backends.sqlite3')
+
+    return {
+        'ENGINE': engine,
+        'NAME': unquote(parsed.path.lstrip('/')),
+        'USER': unquote(parsed.username or ''),
+        'PASSWORD': unquote(parsed.password or ''),
+        'HOST': parsed.hostname or '',
+        'PORT': parsed.port or '',
+    }
+
 if DATABASE_URL:
     DATABASES = {
-        "default": dj_database_url.parse(DATABASE_URL)
+        "default": (
+            dj_database_url.parse(DATABASE_URL)
+            if dj_database_url
+            else parse_database_url_fallback(DATABASE_URL)
+        )
     }
 else:
     sqlite_path = os.environ.get("SQLITE_DB_PATH")

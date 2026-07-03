@@ -1,6 +1,7 @@
 import json
 import logging
 import socket
+from datetime import date, datetime
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model, login, logout
@@ -58,13 +59,21 @@ def user_json(user):
     }
 
 
+def serialize_date(value):
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, str):
+        return value
+    return ''
+
+
 def project_json(project):
     return {
         'id': project.id,
         'name': project.name,
         'description': project.description,
         'assignedTl': user_json(project.assigned_tl) if project.assigned_tl else None,
-        'deadline': project.deadline.isoformat(),
+        'deadline': serialize_date(project.deadline),
         'status': project.status,
         'statusLabel': project.get_status_display(),
     }
@@ -88,7 +97,7 @@ def task_json(task):
         'description': task.description,
         'project': project_json(task.project),
         'assignedMember': user_json(task.assigned_member),
-        'deadline': task.deadline.isoformat(),
+        'deadline': serialize_date(task.deadline),
         'progress': task.progress,
         'status': task.status,
         'statusLabel': task.get_status_display(),
@@ -521,12 +530,28 @@ def projects_view(request):
         return json_error('Manager access is required.', status=403)
 
     data = payload(request)
+    deadline = data.get('deadline')
+    # Normalize deadline: accept date/datetime or various string formats
+    if isinstance(deadline, str):
+        try:
+            # ISO format 'YYYY-MM-DD' or full datetime
+            deadline = date.fromisoformat(deadline)
+        except Exception:
+            try:
+                # Accept 'DD-MM-YYYY' from some clients
+                if len(deadline) == 10 and deadline[2] == '-' and deadline[5] == '-':
+                    day, month, year = deadline.split('-')
+                    deadline = date.fromisoformat(f'{year}-{month}-{day}')
+            except Exception:
+                # leave as-is; Django will validate on save and surface errors
+                pass
     project = Project.objects.create(
         name=data.get('name', ''),
         description=data.get('description', ''),
         assigned_tl_id=data.get('assignedTl') or None,
-        deadline=data.get('deadline'),
+        deadline=deadline,
     )
+    project.refresh_from_db()
     return JsonResponse({'project': project_json(project)}, status=201)
 
 
@@ -562,13 +587,25 @@ def tasks_view(request):
     project = get_object_or_404(projects)
     members = task_member_options_for(request.user)
     assigned_member = get_object_or_404(members, id=data.get('assignedMember'))
+    deadline = data.get('deadline')
+    if isinstance(deadline, str):
+        try:
+            deadline = date.fromisoformat(deadline)
+        except Exception:
+            try:
+                if len(deadline) == 10 and deadline[2] == '-' and deadline[5] == '-':
+                    day, month, year = deadline.split('-')
+                    deadline = date.fromisoformat(f'{year}-{month}-{day}')
+            except Exception:
+                pass
     task = Task.objects.create(
         task_name=data.get('taskName', ''),
         description=data.get('description', ''),
         project=project,
         assigned_member=assigned_member,
-        deadline=data.get('deadline'),
+        deadline=deadline,
     )
+    task.refresh_from_db()
     update_project_status(project)
     return JsonResponse({'task': task_json(task)}, status=201)
 
